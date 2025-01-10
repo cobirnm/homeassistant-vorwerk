@@ -3,7 +3,7 @@ import logging
 
 from pybotvac.robot import Robot
 
-from homeassistant.components.sensor import DEVICE_CLASS_BATTERY
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import PERCENTAGE
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import (
@@ -63,7 +63,7 @@ class VorwerkSensor(CoordinatorEntity, Entity):
     @property
     def device_class(self):
         """Return the device class."""
-        return DEVICE_CLASS_BATTERY
+        return SensorDeviceClass.BATTERY
 
     @property
     def available(self):
