@@ -72,7 +72,7 @@ CONFIG_SCHEMA = vol.Schema(
 
 async def async_setup(hass: HomeAssistantType, config: ConfigType) -> bool:
     """Set up the Vorwerk component."""
-    hass.data[VORWERK_DOMAIN] = {}
+    hass.data.setdefault(VORWERK_DOMAIN, {})
 
     if VORWERK_DOMAIN in config:
         hass.async_create_task(
@@ -102,10 +102,8 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         ]
     }
 
-    for component in VORWERK_PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, component)
-        )
+    # Forward entry setups for all platforms at once (awaited)
+    await hass.config_entries.async_forward_entry_setups(entry, VORWERK_PLATFORMS)
 
     return True
 
@@ -137,7 +135,6 @@ async def _async_create_robots(hass, robot_confs):
             endpoint=config[VORWERK_ROBOT_ENDPOINT],
         )
 
-    robots = []
     try:
         robots = await asyncio.gather(
             *(
@@ -154,7 +151,7 @@ async def _async_create_robots(hass, robot_confs):
 
 async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
     """Unload config entry."""
-    unload_ok: bool = all(
+    unload_ok = all(
         await asyncio.gather(
             *(
                 hass.config_entries.async_forward_entry_unload(entry, component)
