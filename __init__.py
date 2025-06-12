@@ -102,7 +102,6 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         ]
     }
 
-    for component in VORWERK_PLATFORMS:
         hass.async_create_task(
             hass.config_entries.async_forward_entry_setups(entry, VORWERK_PLATFORMS)
         )
