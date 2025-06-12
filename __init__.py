@@ -50,13 +50,16 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
 VORWERK_SCHEMA = vol.Schema(
     vol.All(
         {
             vol.Required(VORWERK_ROBOT_NAME): cv.string,
             vol.Required(VORWERK_ROBOT_SERIAL): cv.string,
             vol.Required(VORWERK_ROBOT_SECRET): cv.string,
-            vol.Optional(VORWERK_ROBOT_ENDPOINT, default="https://nucleo.ksecosys.com:4443"): cv.string,
+            vol.Optional(
+                VORWERK_ROBOT_ENDPOINT, default="https://nucleo.ksecosys.com:4443"
+            ): cv.string,
         }
     )
 )
@@ -65,6 +68,7 @@ CONFIG_SCHEMA = vol.Schema(
     {VORWERK_DOMAIN: vol.Schema(vol.All(cv.ensure_list, [VORWERK_SCHEMA]))},
     extra=vol.ALLOW_EXTRA,
 )
+
 
 async def async_setup(hass: HomeAssistantType, config: ConfigType) -> bool:
     """Set up the Vorwerk component."""
@@ -81,9 +85,11 @@ async def async_setup(hass: HomeAssistantType, config: ConfigType) -> bool:
 
     return True
 
+
 async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
     """Set up config entry."""
     robots = await _async_create_robots(hass, entry.data[VORWERK_ROBOTS])
+
     robot_states = [VorwerkState(robot) for robot in robots]
 
     hass.data[VORWERK_DOMAIN][entry.entry_id] = {
@@ -98,12 +104,15 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     for component in VORWERK_PLATFORMS:
         hass.async_create_task(
-            hass.config_entries.async_forward_entry_setups(entry, VORWERK_PLATFORMS)
+            hass.config_entries.async_forward_entry_setup(entry, component)
         )
 
     return True
 
-def _create_coordinator(hass: HomeAssistantType, robot_state: VorwerkState) -> DataUpdateCoordinator:
+
+def _create_coordinator(
+    hass: HomeAssistantType, robot_state: VorwerkState
+) -> DataUpdateCoordinator:
     async def async_update_data():
         """Fetch data from API endpoint."""
         await hass.async_add_executor_job(robot_state.update)
@@ -116,6 +125,7 @@ def _create_coordinator(hass: HomeAssistantType, robot_state: VorwerkState) -> D
         update_interval=MIN_TIME_BETWEEN_UPDATES,
     )
 
+
 async def _async_create_robots(hass, robot_confs):
     def create_robot(config):
         return Robot(
@@ -127,47 +137,52 @@ async def _async_create_robots(hass, robot_confs):
             endpoint=config[VORWERK_ROBOT_ENDPOINT],
         )
 
+    robots = []
     try:
         robots = await asyncio.gather(
-            *[
+            *(
                 hass.async_add_executor_job(create_robot, robot_conf)
                 for robot_conf in robot_confs
-            ],
+            ),
             return_exceptions=False,
         )
     except NeatoException as ex:
         _LOGGER.error("Failed to connect to robots: %s", ex)
         raise ConfigEntryNotReady from ex
-
     return robots
+
 
 async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
     """Unload config entry."""
     unload_ok: bool = all(
         await asyncio.gather(
-            *[
+            *(
                 hass.config_entries.async_forward_entry_unload(entry, component)
                 for component in VORWERK_PLATFORMS
-            ]
+            )
         )
     )
     if unload_ok:
         hass.data[VORWERK_DOMAIN].pop(entry.entry_id)
     return unload_ok
 
+
 class VorwerkState:
     """Class to convert robot_state dict to more useful object."""
 
     def __init__(self, robot: Robot) -> None:
+        """Initialize new vorwerk vacuum state."""
         self.robot = robot
         self.robot_state: dict[Any, Any] = {}
         self.robot_info: dict[Any, Any] = {}
 
     @property
     def available(self) -> bool:
+        """Return true when robot state is available."""
         return bool(self.robot_state)
 
     def update(self):
+        """Update robot state and robot info."""
         _LOGGER.debug("Running Vorwerk Vacuums update for '%s'", self.robot.name)
         self._update_robot_info()
         self._update_state()
@@ -184,14 +199,16 @@ class VorwerkState:
             self.robot_state = self.robot.state
             _LOGGER.debug(self.robot_state)
         except NeatoRobotException as ex:
-            if self.available:
+            if self.available:  # print only once when available
                 _LOGGER.error(
                     "Vorwerk vacuum connection error for '%s': %s", self.robot.name, ex
                 )
             self.robot_state = {}
+            return
 
     @property
     def docked(self) -> bool | None:
+        """Vacuum is docked."""
         if not self.available:
             return None
         return (
@@ -201,6 +218,7 @@ class VorwerkState:
 
     @property
     def charging(self) -> bool | None:
+        """Vacuum is charging."""
         if not self.available:
             return None
         return (
@@ -210,6 +228,7 @@ class VorwerkState:
 
     @property
     def state(self) -> str | None:
+        """Return Home Assistant vacuum state."""
         if not self.available:
             return None
         robot_state = self.robot_state.get("state")
@@ -232,6 +251,7 @@ class VorwerkState:
 
     @property
     def alert(self) -> str | None:
+        """Return vacuum alert message."""
         if not self.available:
             return None
         if "alert" in self.robot_state:
@@ -240,8 +260,10 @@ class VorwerkState:
 
     @property
     def status(self) -> str | None:
+        """Return vacuum status message."""
         if not self.available:
             return None
+
         status = None
         if self.state == STATE_ERROR:
             status = self._error_status()
@@ -260,12 +282,15 @@ class VorwerkState:
             status = "Paused"
         elif self.state == STATE_RETURNING:
             status = "Returning"
+
         return status
 
     def _error_status(self):
+        """Return error status."""
         return ERRORS.get(self.robot_state["error"], self.robot_state["error"])
 
     def _cleaning_status(self):
+        """Return cleaning status."""
         status_items = [
             MODE.get(self.robot_state["cleaning"]["mode"]),
             ACTION.get(self.robot_state["action"]),
@@ -279,12 +304,14 @@ class VorwerkState:
 
     @property
     def battery_level(self) -> str | None:
+        """Return the battery level of the vacuum cleaner."""
         if not self.available:
             return None
         return self.robot_state["details"]["charge"]
 
     @property
     def device_info(self) -> DeviceInfo:
+        """Device info for robot."""
         return DeviceInfo(
             identifiers={(VORWERK_DOMAIN, self.robot.serial)},
             manufacturer=self.robot_info["battery"]["vendor"] if self.robot_info else None,
@@ -295,6 +322,7 @@ class VorwerkState:
 
     @property
     def schedule_enabled(self):
+        """Return True when schedule is enabled."""
         if not self.available:
             return None
         return bool(self.robot_state["details"]["isScheduleEnabled"])
