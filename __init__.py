@@ -22,7 +22,8 @@ from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.exceptions import ConfigEntryNotReady
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.typing import ConfigType, HomeAssistantType
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -70,7 +71,7 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
-async def async_setup(hass: HomeAssistantType, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Vorwerk component."""
     hass.data.setdefault(VORWERK_DOMAIN, {})
 
@@ -86,7 +87,7 @@ async def async_setup(hass: HomeAssistantType, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up config entry."""
     robots = await _async_create_robots(hass, entry.data[VORWERK_ROBOTS])
 
@@ -109,7 +110,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
 
 def _create_coordinator(
-    hass: HomeAssistantType, robot_state: VorwerkState
+    hass: HomeAssistant, robot_state: VorwerkState
 ) -> DataUpdateCoordinator:
     async def async_update_data():
         """Fetch data from API endpoint."""
@@ -124,8 +125,8 @@ def _create_coordinator(
     )
 
 
-async def _async_create_robots(hass, robot_confs):
-    def create_robot(config):
+async def _async_create_robots(hass: HomeAssistant, robot_confs: list[dict[str, Any]]):
+    def create_robot(config: dict[str, Any]) -> Robot:
         return Robot(
             serial=config[VORWERK_ROBOT_SERIAL],
             secret=config[VORWERK_ROBOT_SECRET],
@@ -149,18 +150,11 @@ async def _async_create_robots(hass, robot_confs):
     return robots
 
 
-async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload config entry."""
-    unload_ok = all(
-        await asyncio.gather(
-            *(
-                hass.config_entries.async_forward_entry_unload(entry, component)
-                for component in VORWERK_PLATFORMS
-            )
-        )
-    )
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, VORWERK_PLATFORMS)
     if unload_ok:
-        hass.data[VORWERK_DOMAIN].pop(entry.entry_id)
+        hass.data[VORWERK_DOMAIN].pop(entry.entry_id, None)
     return unload_ok
 
 
