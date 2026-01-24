@@ -1,11 +1,17 @@
 """Support for Vorwerk sensors."""
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from pybotvac.robot import Robot
 
 from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -21,11 +27,10 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-
 BATTERY = "Battery"
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up the Vorwerk sensor using config entry."""
     _LOGGER.debug("Adding sensors for vorwerk robots")
     async_add_entities(
@@ -41,7 +46,7 @@ class VorwerkSensor(CoordinatorEntity, Entity):
     """Vorwerk sensor."""
 
     def __init__(
-        self, robot_state: VorwerkState, coordinator: DataUpdateCoordinator
+        self, robot_state: VorwerkState, coordinator: DataUpdateCoordinator[Any]
     ) -> None:
         """Initialize Vorwerk sensor."""
         super().__init__(coordinator)
@@ -51,32 +56,32 @@ class VorwerkSensor(CoordinatorEntity, Entity):
         self._robot_serial = self.robot.serial
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of this sensor."""
         return self._robot_name
 
     @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return unique ID."""
         return self._robot_serial
 
     @property
-    def device_class(self):
+    def device_class(self) -> SensorDeviceClass | None:
         """Return the device class."""
         return SensorDeviceClass.BATTERY
 
     @property
-    def available(self):
+    def available(self) -> bool:
         """Return availability."""
         return self._state.available
 
     @property
-    def state(self):
+    def state(self) -> str | None:
         """Return the state."""
         return self._state.battery_level
 
     @property
-    def unit_of_measurement(self):
+    def unit_of_measurement(self) -> str:
         """Return unit of measurement."""
         return PERCENTAGE
 
