@@ -1,11 +1,16 @@
 """Support for Vorwerk Connected Vacuums switches."""
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from pybotvac.exceptions import NeatoRobotException
 from pybotvac.robot import Robot
 
-from homeassistant.const import STATE_OFF, STATE_ON
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import ToggleEntity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -22,7 +27,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up Vorwerk switch with config entry."""
     _LOGGER.debug("Adding switches for vorwerk (%s)", entry.title)
 
@@ -43,7 +48,7 @@ class VorwerkScheduleSwitch(CoordinatorEntity, ToggleEntity):
     """Vorwerk Schedule Switches."""
 
     def __init__(
-        self, robot_state: VorwerkState, coordinator: DataUpdateCoordinator
+        self, robot_state: VorwerkState, coordinator: DataUpdateCoordinator[Any]
     ) -> None:
         """Initialize the Vorwerk Schedule switch."""
         super().__init__(coordinator)
@@ -53,22 +58,22 @@ class VorwerkScheduleSwitch(CoordinatorEntity, ToggleEntity):
         self._robot_serial = self.robot.serial
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the switch."""
         return self._robot_name
 
     @property
-    def available(self):
+    def available(self) -> bool:
         """Return True if entity is available."""
         return self._state.available
 
     @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return a unique ID."""
         return self._robot_serial
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         """Return true if switch is on."""
         return bool(self._state.schedule_enabled)
 
@@ -77,7 +82,7 @@ class VorwerkScheduleSwitch(CoordinatorEntity, ToggleEntity):
         """Device info for robot."""
         return self._state.device_info
 
-    async def async_turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
 
         def turn_on():
@@ -91,7 +96,7 @@ class VorwerkScheduleSwitch(CoordinatorEntity, ToggleEntity):
         await self.hass.async_add_executor_job(turn_on)
         await self.coordinator.async_request_refresh()
 
-    async def async_turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
 
         def turn_off():
