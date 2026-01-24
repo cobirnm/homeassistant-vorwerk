@@ -1,35 +1,45 @@
 """Constants for Vorwerk integration."""
+from __future__ import annotations
+
 from datetime import timedelta
 
+# Integration domain
 VORWERK_DOMAIN = "vorwerk"
 
+# Data keys
 VORWERK_ROBOTS = "robots"
 VORWERK_ROBOT_API = "robot_api"
 VORWERK_ROBOT_COORDINATOR = "robot_coordinator"
 
+# Robot attributes
 VORWERK_ROBOT_NAME = "name"
 VORWERK_ROBOT_SERIAL = "serial"
 VORWERK_ROBOT_SECRET = "secret"
 VORWERK_ROBOT_TRAITS = "traits"
 VORWERK_ROBOT_ENDPOINT = "endpoint"
 
+# Platforms this integration provides
 VORWERK_PLATFORMS = ["vacuum", "switch", "sensor"]
 
 # The client_id is the same for all users.
 VORWERK_CLIENT_ID = "KY4YbVAvtgB7lp8vIbWQ7zLk3hssZlhR"
 
+# Coordinator refresh interval
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1)
 
+# Service/attribute keys (if used by services or options)
 ATTR_NAVIGATION = "navigation"
 ATTR_CATEGORY = "category"
 ATTR_ZONE = "zone"
 
+# Robot states
 ROBOT_STATE_INVALID = 0
 ROBOT_STATE_IDLE = 1
 ROBOT_STATE_BUSY = 2
 ROBOT_STATE_PAUSE = 3
 ROBOT_STATE_ERROR = 4
 
+# Robot actions
 ROBOT_ACTION_INVALID = 0
 ROBOT_ACTION_HOUSE_CLEANING = 1
 ROBOT_ACTION_SPOT_CLEANING = 2
@@ -47,6 +57,7 @@ ROBOT_ACTION_ACQUIRING_MAP_IDS = 13
 ROBOT_ACTION_UPLOADING_MAP = 14
 ROBOT_ACTION_SUSPENDED_EXPLORATION = 15
 
+# Actions considered as "cleaning" for HA state mapping
 ROBOT_CLEANING_ACTIONS = [
     ROBOT_ACTION_HOUSE_CLEANING,
     ROBOT_ACTION_SPOT_CLEANING,
@@ -57,6 +68,7 @@ ROBOT_CLEANING_ACTIONS = [
     ROBOT_ACTION_SUSPENDED_EXPLORATION,
 ]
 
+# Human-readable action names
 ACTION = {
     ROBOT_ACTION_INVALID: "Invalid",
     ROBOT_ACTION_HOUSE_CLEANING: "House Cleaning",
@@ -76,8 +88,10 @@ ACTION = {
     ROBOT_ACTION_SUSPENDED_EXPLORATION: "Suspended Exploration",
 }
 
+# Cleaning mode names
 MODE = {1: "Eco", 2: "Turbo"}
 
+# Error codes -> user-friendly messages
 ERRORS = {
     "ui_error_battery_battundervoltlithiumsafety": "Replace battery",
     "ui_error_battery_critical": "Replace battery",
@@ -172,6 +186,7 @@ ERRORS = {
     "nav_undocking_failed": "Clear my path",
 }
 
+# Alert codes -> user-friendly messages
 ALERTS = {
     "ui_alert_dust_bin_full": "Please empty dust bin",
     "ui_alert_recovering_location": "Returning to start",
