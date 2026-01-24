@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-from pybotvac import Robot
+from pybotvac.robot import Robot
 from pybotvac.exceptions import NeatoRobotException
 
 from homeassistant.components.vacuum import (
@@ -18,8 +18,11 @@ from homeassistant.components.vacuum import (
     VacuumEntityFeature,
 )
 from homeassistant.const import ATTR_MODE
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -48,7 +51,7 @@ SUPPORTED_FEATURES = (
 )
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up Vorwerk vacuum with config entry."""
     _LOGGER.debug("Adding vorwerk vacuums")
     entities = [
