@@ -12,8 +12,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_CODE, CONF_EMAIL, CONF_TOKEN
 
-
-# pylint: disable=unused-import
 from .const import (
     VORWERK_CLIENT_ID,
     VORWERK_DOMAIN,
@@ -34,14 +32,13 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the config flow."""
         self._email: str | None = None
         self._session = VorwerkSession()
 
-    async def async_step_user(self, user_input=None):
-        """Step when user initializes a integration."""
-
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
+        """Step when user initializes the integration."""
         if user_input is not None:
             self._email = user_input.get(CONF_EMAIL)
             if self._email:
@@ -59,11 +56,11 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
         )
 
     async def async_step_code(
-        self, user_input = None
+        self, user_input: dict[str, Any] | None = None
     ):
         """Step when user enters OTP Code from email."""
         assert self._email is not None  # typing
-        errors = {}
+        errors: dict[str, str] = {}
         code = user_input.get(CONF_CODE) if user_input else None
         if code:
             try:
@@ -81,6 +78,7 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
             except (HTTPError, NeatoException):
                 errors["base"] = "invalid_auth"
 
+        # Send OTP email if no code yet or previous attempt failed
         await self.hass.async_add_executor_job(
             self._session.send_email_otp, self._email
         )
@@ -95,23 +93,24 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
             errors=errors,
         )
 
-    async def async_step_import(self, user_input):
-        """Import a config flow from configuration."""
+    async def async_step_import(self, user_input: list[dict[str, Any]]):
+        """Import a config flow from YAML configuration."""
         unique_id = "from configuration"
         data = {VORWERK_ROBOTS: user_input}
 
         await self.async_set_unique_id(unique_id)
-        self._abort_if_unique_id_configured(data)
+        self._abort_if_unique_id_configured()
 
-        _LOGGER.info("Creating new Vorwerk robot config entry")
+        _LOGGER.info("Creating new Vorwerk robot config entry from configuration")
         return self.async_create_entry(
             title="from configuration",
             data=data,
         )
 
-    def _get_robots(self, email: str, code: str):
-        """Fetch the robot list from vorwerk."""
+    def _get_robots(self, email: str, code: str) -> list[dict[str, Any]]:
+        """Fetch the robot list from Vorwerk."""
         self._session.fetch_token_passwordless(email, code)
+        # API returns a list of robot dicts
         return [
             {
                 VORWERK_ROBOT_NAME: robot["name"],
@@ -127,11 +126,11 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
 class VorwerkSession(pybotvac.PasswordlessSession):
     """PasswordlessSession pybotvac session for Vorwerk cloud."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Vorwerk cloud session."""
         super().__init__(client_id=VORWERK_CLIENT_ID, vendor=pybotvac.Vorwerk())
 
     @property
-    def token(self):
+    def token(self) -> dict[str, Any]:
         """Return the token dict. Contains id_token, access_token and refresh_token."""
         return self._token
