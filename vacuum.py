@@ -10,10 +10,6 @@ from pybotvac.exceptions import NeatoRobotException
 
 from homeassistant.components.vacuum import (
     ATTR_STATUS,
-    STATE_CLEANING,
-    STATE_DOCKED,
-    STATE_IDLE,
-    STATE_PAUSED,
     StateVacuumEntity,
     VacuumEntityFeature,
 )
@@ -144,11 +140,13 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
         if not self._state:
             return
 
+        current_state = self._state.state
+
         def _do():
             try:
-                if self._state.state in (STATE_IDLE, STATE_DOCKED):
+                if current_state in ("idle", "docked"):
                     self.robot.start_cleaning()
-                elif self._state.state == STATE_PAUSED:
+                elif current_state == "paused":
                     self.robot.resume_cleaning()
             except NeatoRobotException as ex:
                 _LOGGER.error(
@@ -173,9 +171,11 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
 
     async def async_return_to_base(self, **kwargs: Any) -> None:
         """Set the vacuum cleaner to return to the dock."""
+        current_state = self._state.state
+
         def _do():
             try:
-                if self._state.state == STATE_CLEANING:
+                if current_state == "cleaning":
                     self.robot.pause_cleaning()
                 self.robot.send_to_base()
             except NeatoRobotException as ex:
