@@ -10,14 +10,6 @@ from pybotvac.robot import Robot
 from pybotvac.vorwerk import Vorwerk
 import voluptuous as vol
 
-from homeassistant.components.vacuum import (
-    STATE_CLEANING,
-    STATE_DOCKED,
-    STATE_ERROR,
-    STATE_IDLE,
-    STATE_PAUSED,
-    STATE_RETURNING,
-)
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.exceptions import ConfigEntryNotReady
 import homeassistant.helpers.config_validation as cv
@@ -51,6 +43,13 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Local state strings replacing deprecated HA vacuum constants
+STATE_CLEANING_STR = "cleaning"
+STATE_DOCKED_STR = "docked"
+STATE_IDLE_STR = "idle"
+STATE_PAUSED_STR = "paused"
+STATE_RETURNING_STR = "returning"
+STATE_ERROR_STR = "error"
 
 VORWERK_SCHEMA = vol.Schema(
     vol.All(
@@ -219,25 +218,25 @@ class VorwerkState:
 
     @property
     def state(self) -> str | None:
-        """Return Home Assistant vacuum state."""
+        """Return vacuum state as string."""
         if not self.available:
             return None
         robot_state = self.robot_state.get("state")
         state = None
         if self.charging or self.docked:
-            state = STATE_DOCKED
+            state = STATE_DOCKED_STR
         elif robot_state == ROBOT_STATE_IDLE:
-            state = STATE_IDLE
+            state = STATE_IDLE_STR
         elif robot_state == ROBOT_STATE_BUSY:
             action = self.robot_state.get("action")
             if action in ROBOT_CLEANING_ACTIONS:
-                state = STATE_CLEANING
+                state = STATE_CLEANING_STR
             else:
-                state = STATE_RETURNING
+                state = STATE_RETURNING_STR
         elif robot_state == ROBOT_STATE_PAUSE:
-            state = STATE_PAUSED
+            state = STATE_PAUSED_STR
         elif robot_state == ROBOT_STATE_ERROR:
-            state = STATE_ERROR
+            state = STATE_ERROR_STR
         return state
 
     @property
@@ -256,22 +255,22 @@ class VorwerkState:
             return None
 
         status = None
-        if self.state == STATE_ERROR:
+        if self.state == STATE_ERROR_STR:
             status = self._error_status()
         elif self.alert:
             status = self.alert
-        elif self.state == STATE_DOCKED:
+        elif self.state == STATE_DOCKED_STR:
             if self.charging:
                 status = "Charging"
             if self.docked:
                 status = "Docked"
-        elif self.state == STATE_IDLE:
+        elif self.state == STATE_IDLE_STR:
             status = "Stopped"
-        elif self.state == STATE_CLEANING:
+        elif self.state == STATE_CLEANING_STR:
             status = self._cleaning_status()
-        elif self.state == STATE_PAUSED:
+        elif self.state == STATE_PAUSED_STR:
             status = "Paused"
-        elif self.state == STATE_RETURNING:
+        elif self.state == STATE_RETURNING_STR:
             status = "Returning"
 
         return status
